@@ -22,9 +22,17 @@ refactored/
 tests/
   problems.py            确定性 SPD 测试问题（三对角 Laplacian、稠密 SPD）
   test_equivalence.py    新旧对拍：迭代次数、逐次残差、解向量
+  test_baseline.py       冻结基线完整性 + 新版对冻结基线位级一致
   test_criteria.py       判据可替换；与独立参考 PCG 对拍
   test_isolation.py      线程池并发两任务统计/日志互不干扰
   test_legacy_defects.py 旧版缺陷的可执行证据
+baseline/
+  expected.json          冻结基线：legacy 实测输出（只读，勿手改）
+  SHA256SUMS             基线输入（legacy 源码 + problems.py）的 sha256
+tools/
+  freeze_baseline.py     冻结/校验基线（--verify 只校验不写入）
+  generate_report.py     实测生成对拍报告并回填 README 数字（--check 校验）
+EQUIVALENCE_REPORT.md    对拍报告（脚本生成，勿手改）
 examples/demo.py         自定义预条件+自定义判据、并发两任务示例
 run_tests.py             一键测试入口
 ```
@@ -73,18 +81,47 @@ kernel.pcg_solve（迭代编排）
   `NullLogger`，另有 `StreamLogger`、`ListLogger`；每任务传入各自实例。
 - **配置**：`SolverConfig` 为 frozen dataclass，随任务传入，不存在全局旋钮。
 
-## 数值等价性
+## 数值等价性（冻结基线）
 
 重构没有改变算法与运算顺序：`dot` 的求和次序、`axpy` 的原地更新、残差记录
 位置、判据判定时机、Jacobi 与 SSOR 的逐行公式在新旧两侧逐行对应（SSOR 反向
 扫描两侧使用同一正确公式 `y_i = ω/d_i·(t_i − upper_i·y_{i+1})`）。
 
-`tests/test_equivalence.py` 在 4 个确定性 SPD 问题（2 个三对角、2 个稠密）上
-分别对 Jacobi、SSOR 断言：
+「行为等价」的参照物是**冻结基线**，不是口头约定：
 
-- 迭代次数完全相等；
-- 逐次残差相对误差 ≤ 1e-10；
-- 解向量相对误差 ≤ 1e-9。
+- `baseline/expected.json` 由 `tools/freeze_baseline.py` 对 `legacy/`
+  实测生成，含 8 个用例（Jacobi/SSOR × 4 个确定性 SPD 问题）的迭代次数、
+  matvec 数、逐次残差历史与解向量（float 全精度）。
+- `baseline/SHA256SUMS` 钉住基线输入（`legacy/` 两个源码 +
+  `tests/problems.py`）的 sha256；任何改动都会被
+  `tests/test_baseline.py` 与 `freeze_baseline.py --verify` 检出。
+- `baseline/` 与 `legacy/` 已置为只读；要改动基线必须显式重跑
+  `freeze_baseline.py` 并提交说明，禁止顺手漂移。
+
+<!-- BEGIN GENERATED EQUIVALENCE -->
+以下数字由 `python3 tools/generate_report.py` 实测生成，请勿手改。
+
+- 对拍用例数：8（2 种预条件 x 4 个确定性 SPD 问题）
+- 迭代次数与基线完全一致：8/8
+- 逐次残差历史与基线位级一致（bit-identical）：8/8
+- 新版 vs 冻结基线 逐次残差最大相对误差：0 (bit-identical)
+- 新版 vs 冻结基线 解向量最大相对误差：0 (bit-identical)
+- 当前 legacy 代码复算与冻结基线位级一致：是
+- 结论：**行为等价成立（位级一致）**
+
+| 用例 | 基线迭代 | 旧版迭代 | 新版迭代 | 新旧逐次残差最大相对差 | 新旧解向量最大相对差 |
+|---|---|---|---|---|---|
+| jacobi/laplacian_n40 | 40 | 40 | 40 | 0 (bit-identical) | 0 (bit-identical) |
+| jacobi/laplacian_n120 | 120 | 120 | 120 | 0 (bit-identical) | 0 (bit-identical) |
+| jacobi/dense_spd_n15 | 14 | 14 | 14 | 0 (bit-identical) | 0 (bit-identical) |
+| jacobi/dense_spd_n30 | 23 | 23 | 23 | 0 (bit-identical) | 0 (bit-identical) |
+| ssor/laplacian_n40 | 19 | 19 | 19 | 0 (bit-identical) | 0 (bit-identical) |
+| ssor/laplacian_n120 | 42 | 42 | 42 | 0 (bit-identical) | 0 (bit-identical) |
+| ssor/dense_spd_n15 | 15 | 15 | 15 | 0 (bit-identical) | 0 (bit-identical) |
+| ssor/dense_spd_n30 | 24 | 24 | 24 | 0 (bit-identical) | 0 (bit-identical) |
+<!-- END GENERATED EQUIVALENCE -->
+
+完整逐用例数据见 `EQUIVALENCE_REPORT.md`（同样由脚本生成）。
 
 ## 旧版隐式耦合 → 缺陷 → 新结构对照
 
@@ -128,6 +165,10 @@ python3 -m unittest discover -s tests -v
 
 # 只跑新旧对拍
 python3 -m unittest tests.test_equivalence -v
+
+# 基线/报告复现（任何人重跑应得到同一结论）
+python3 tools/freeze_baseline.py --verify   # 基线输入与期望输出无漂移
+python3 tools/generate_report.py --check    # 报告与 README 数字与实测一致
 
 # 扩展示例（自定义预条件/判据 + 同进程并发两任务）
 python3 examples/demo.py
