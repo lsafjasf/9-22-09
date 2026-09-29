@@ -40,7 +40,7 @@ solver/linalg.py      纯函数数值原语（matvec / residual / norm2 / axpy�
 | 1 | 配置是模块级全局变量 `TOLERANCE/MAX_ITER/OMEGA/LOG_EVERY`，`solve()` 运行时读取 | 同进程两个任务想要不同配置必须“改全局→求解→再改回”，并发时互相覆盖；配置在任意时刻可被第三方改写，行为不可复现 | `SolverConfig` 为 `frozen` dataclass，每个 `IterativeSolver` 实例持有一份，创建后不可变 |
 | 2 | 统计挂在**类属性** `IterativeSolver.stats` 上 | 所有实例、所有线程共享同一份可变 dict；多次 `solve` 的残差历史混在一个列表里，`runs`/`total_iterations` 跨任务累积，无法得到单次运行的干净统计（`tests/...::test_legacy_shared_stats_defect_is_documented` 反向验证该缺陷） | `SolveStats`/`StatsCollector` 每次 `solve` 新建，随 `SolveResult` 返回；进程内无任何共享可变状态 |
 | 3 | Jacobi 预条件硬编码在迭代循环内 | 换预条件只能复制整个文件再改，两份代码随之发散；预条件逻辑无法单独测试 | `Preconditioner` 协议（`apply(r)→z`），提供 `Identity`/`Jacobi`/`SSOR` 三种实现，构造期以工厂注入 |
-| 4 | 收敛判据（相对残差）硬编码在循环内 | 换判据同样要复制文件；判据无法单独测试 | `ConvergenceCriterion` 协议（`is_converged(state)→bool`），提供相对/绝对残差两种实现；判据是纯函数对象，可并发共享 |
+| 4 | 收敛判据（相对残差）硬编码在循环内 | 换判据同样要复制文件；判据无法单独测试 | `ConvergenceCriterion` 协议（`is_converged(state)→bool`），提供绝对/相对/残差下降率三种实现（适用性见 `docs/CRITERIA.md`）；判据是纯函数对象，可并发共享 |
 | 5 | 日志直接 `print` 到全局 stdout | 多任务并发时输出交错无法归属；无法静默或重定向到文件 | `LogObserver` 构造时注入 `stream`，每个任务可各写各的流 |
 | 6 | 向量/矩阵运算、迭代、统计、日志全在一个方法里 | 任何小改动都要动整个类；运算原语无法复用与单测 | `linalg` 纯函数 + `kernel` 只编排骨架，各层可独立测试 |
 
