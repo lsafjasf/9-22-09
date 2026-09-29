@@ -1,0 +1,44 @@
+problem: n=30 SPD (seed=7), ||b||=3.560265e+00, ||r0||=3.181226e+01, omega=1.0, max_iter=5000
+timing: best of 7 runs per combo
+
+preconditioner criterion        iters   final_res  converged   time_ms
+----------------------------------------------------------------------
+Jacobi         relative            14   1.195e-08       True      0.40
+Jacobi         absolute            14   1.195e-08       True      0.40
+Jacobi         decrease-rate       12   2.161e-07       True      0.34
+SSOR(1.0)      relative             6   1.043e-08       True      0.29
+SSOR(1.0)      absolute             6   1.043e-08       True      0.29
+SSOR(1.0)      decrease-rate        5   3.175e-07       True      0.24
+SSOR(1.2)      relative             8   3.701e-09       True      0.37
+SSOR(1.2)      absolute             8   3.701e-09       True      0.37
+SSOR(1.2)      decrease-rate        7   5.217e-08       True      0.33
+
+residual curves (log10 ||r|| vs iteration):
+  1 = Jacobi+relative
+  2 = Jacobi+absolute
+  3 = Jacobi+decrease-rate
+  4 = SSOR(1.0)+relative
+  5 = SSOR(1.0)+absolute
+  6 = SSOR(1.0)+decrease-rate
+  7 = SSOR(1.2)+relative
+  8 = SSOR(1.2)+absolute
+  9 = SSOR(1.2)+decrease-rate
+
+1e   +1.5 |*                                                               |
+1e   +0.7 |    *                                                           |
+1e   -0.0 |    *    *                                                      |
+1e   -0.8 |              *                                                 |
+1e   -1.6 |         *        *                                             |
+1e   -2.3 |         *    *       *                                         |
+1e   -3.1 |                           *                                    |
+1e   -3.8 |              *   *             *   *                           |
+1e   -4.6 |                      *                 *                       |
+1e   -5.4 |                  *                          *                  |
+1e   -6.1 |                      *    *                      *             |
+1e   -6.9 |                                *                     *         |
+1e   -7.7 |                           *                              *    *|
+1e   -8.4 |                                    *                           |
+          +----------------------------------------------------------------+
+            iter 0                                                iter 14
+
+final-residual assertion: all 9 combos converged, worst final_res / limit = 0.998 <= 1.0  [PASS]

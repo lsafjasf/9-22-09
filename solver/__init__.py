@@ -12,7 +12,8 @@
 
 from .config import SolverConfig
 from .criteria import (AbsoluteResidualCriterion, IterationState,
-                       RelativeResidualCriterion)
+                       RelativeResidualCriterion,
+                       ResidualDecreaseRateCriterion)
 from .preconditioners import (IdentityPreconditioner, JacobiPreconditioner,
                               SSORPreconditioner)
 from .solver import IterativeSolver, SolveResult
@@ -23,6 +24,7 @@ __all__ = [
     "IterationState",
     "RelativeResidualCriterion",
     "AbsoluteResidualCriterion",
+    "ResidualDecreaseRateCriterion",
     "IdentityPreconditioner",
     "JacobiPreconditioner",
     "SSORPreconditioner",

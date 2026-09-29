@@ -18,6 +18,9 @@ class IterationState:
     iteration: int          # 当前迭代步数（0 = 初始残差）
     residual_norm: float    # ||r||_2
     rhs_norm: float         # ||b||_2
+    # ||r_0||_2（初始残差范数），供以初始残差为基准的判据使用；
+    # 带默认值以兼容仍按三字段构造快照的外部调用方。
+    initial_residual_norm: float = None
 
 
 class RelativeResidualCriterion:
@@ -38,3 +41,21 @@ class AbsoluteResidualCriterion:
 
     def is_converged(self, state):
         return state.residual_norm <= self.tolerance
+
+
+class ResidualDecreaseRateCriterion:
+    """残差下降率判据：||r_k|| <= tol * ||r_0||。
+
+    以初始残差为基准衡量累计下降幅度。当 x0 = 0 时 ||r_0|| = ||b||，
+    此时与相对残差判据完全等价；当 x0 非零（热启动/有良好初猜）时，
+    二者基准不同，本判据更贴合“在初猜基础上再压低多少”的语义。
+    """
+
+    def __init__(self, tolerance):
+        self.tolerance = tolerance
+
+    def is_converged(self, state):
+        base = state.initial_residual_norm
+        if base is None:  # 兼容未提供初始残差的旧快照
+            base = state.rhs_norm
+        return state.residual_norm <= self.tolerance * base

@@ -28,16 +28,20 @@ def richardson_kernel(A, b, x0, *, omega, max_iterations,
     iterations = 0
     final_residual = None
     converged = False
+    initial_residual = None
     for k in range(max_iterations + 1):
         r = residual(A, b, x)
         r_norm = norm2(r)
         final_residual = r_norm
+        if initial_residual is None:
+            initial_residual = r_norm
 
         for obs in observers:
             obs.on_iteration(k, r_norm)
 
         state = IterationState(iteration=k, residual_norm=r_norm,
-                               rhs_norm=rhs_norm)
+                               rhs_norm=rhs_norm,
+                               initial_residual_norm=initial_residual)
         if criterion.is_converged(state):
             iterations = k
             converged = True
